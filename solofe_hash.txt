@@ -1,3 +1,14 @@
+#_______________________________________________________________________________________________________________________________________
+# Primero debemos descargar las siguientes librerías:
+python
+Copiar
+Editar
+import os
+import hashlib
+from datetime import datetime
+La idea es que podemos usar esta información para realizar un análisis de integridad o registrar fechas importantes en nuestros procesos.
+#----------------------------------------------------------------------------------------------------------------------------------------
+
 import os
 import hashlib
 from datetime import datetime
