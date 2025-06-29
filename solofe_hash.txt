@@ -1,0 +1,99 @@
+import os
+import hashlib
+from datetime import datetime
+
+EXTENSIONES_VALIDAS = ['.mp4', '.avi', '.mov']
+
+def calcular_hash(path_archivo):
+    try:
+        sha256 = hashlib.sha256()
+        with open(path_archivo, 'rb') as f:
+            while True:
+                chunk = f.read(8192)
+                if not chunk:
+                    break
+                sha256.update(chunk)
+        return sha256.hexdigest()
+    except Exception as e:
+        return f"ERROR: {str(e)}"
+
+def obtener_archivos_con_hash(carpeta):
+    archivos = {}
+    errores = []
+    for archivo in os.listdir(carpeta):
+        ruta_completa = os.path.join(carpeta, archivo)
+        if os.path.isfile(ruta_completa):
+            nombre, ext = os.path.splitext(archivo)
+            if ext.lower() in EXTENSIONES_VALIDAS:
+                hash_archivo = calcular_hash(ruta_completa)
+                if hash_archivo.startswith("ERROR"):
+                    errores.append((archivo, hash_archivo))
+                else:
+                    archivos[hash_archivo] = archivos.get(hash_archivo, []) + [archivo]
+    return archivos, errores
+
+def comparar_por_hash(carpetaA, carpetaB):
+    hashA, erroresA = obtener_archivos_con_hash(carpetaA)
+    hashB, erroresB = obtener_archivos_con_hash(carpetaB)
+
+    fecha_actual = datetime.now().strftime('%Y%m%d')
+    nombre_reporte = f"reporte_hash_{fecha_actual}.txt"
+
+    hashes_A = set(hashA.keys())
+    hashes_B = set(hashB.keys())
+
+    comunes = hashes_A & hashes_B
+    solo_A = hashes_A - hashes_B
+    solo_B = hashes_B - hashes_A
+
+    with open(nombre_reporte, 'w', encoding='utf-8') as f:
+        f.write("==========================================\n")
+        f.write(" REPORTE DE COMPARACIÓN POR HASH DE VIDEOS\n")
+        f.write("==========================================\n\n")
+        f.write(f"Fecha: {datetime.now().strftime('%d/%m/%Y')}\n")
+        f.write(f"Carpeta A: {carpetaA}\n")
+        f.write(f"Carpeta B: {carpetaB}\n\n")
+        f.write("Extensiones analizadas: .mp4, .avi, .mov\n\n")
+
+        f.write(f"Total archivos en A: {len(hashA)}\n")
+        f.write(f"Total archivos en B: {len(hashB)}\n")
+        f.write(f"Archivos con contenido idéntico (hash igual): {len(comunes)}\n")
+        f.write(f"Archivos únicos en A: {len(solo_A)}\n")
+        f.write(f"Archivos únicos en B: {len(solo_B)}\n\n")
+
+        if comunes:
+            f.write("=== Archivos con hash coincidente (contenido igual): ===\n")
+            for h in comunes:
+                nombres_A = ', '.join(hashA[h])
+                nombres_B = ', '.join(hashB[h])
+                f.write(f"• A: {nombres_A}  ==  B: {nombres_B}\n")
+            f.write("\n")
+
+        if solo_A:
+            f.write("=== Archivos únicos en A: ===\n")
+            for h in solo_A:
+                f.write(f"• {', '.join(hashA[h])}\n")
+            f.write("\n")
+
+        if solo_B:
+            f.write("=== Archivos únicos en B: ===\n")
+            for h in solo_B:
+                f.write(f"• {', '.join(hashB[h])}\n")
+            f.write("\n")
+
+        if erroresA or erroresB:
+            f.write("=== Archivos no analizados por error: ===\n")
+            for nombre, err in erroresA + erroresB:
+                f.write(f"• {nombre}: {err}\n")
+
+        f.write("\n------------------------------------------\n")
+        f.write("Este reporte fue generado automáticamente\n")
+        f.write("por la herramienta de comparación por HASH.\n")
+
+    print(f"\n✅ Comparación finalizada. Reporte guardado como: {nombre_reporte}")
+
+# === Inicio del programa ===
+if __name__ == "__main__":
+    carpeta_A = input("Introduce la ruta de la carpeta A: ").strip('" ')
+    carpeta_B = input("Introduce la ruta de la carpeta B: ").strip('" ')
+    comparar_por_hash(carpeta_A, carpeta_B)
